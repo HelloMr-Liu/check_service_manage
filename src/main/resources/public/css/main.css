@@ -1,0 +1,19 @@
+/*========================基础样式信息========================*/
+html,body,#app{
+    height: 100%;
+    margin:0px !important;
+    background-color: #f9f9fb;
+}
+/*修改布局块样式*/
+.el-row{
+    margin-left: 0px !important;
+    margin-right: 0px !important;
+}
+.el-col{
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+}
+/*解决vue变量未渲染前代码显示问题*/
+[v-cloak]{
+    display: none;
+}

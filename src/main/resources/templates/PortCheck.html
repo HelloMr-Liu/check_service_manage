@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+	<title>服务检测管理系统</title>
+</head>
+
+<body>
+	<div id="app" v-cloak>
+
+		<!--==============================主操作区域开始======================================-->
+
+		<el-main>
+			<el-tabs type="border-card"  @tab-click="tabClick"  v-model="activeTab">
+				<el-tab-pane label="检测服务信息" name="tab1">
+					<span slot="label"><i class="el-icon-s-platform"></i> 检测服务信息</span>
+					<el-row :gutter="24">
+						<el-col :span="24"  >
+							<el-divider content-position="center">检测服务信息列表(列表刷新时间：{{newRefreshTime}})</el-divider>
+						</el-col>
+					</el-row>
+					<el-row :gutter="24" style="text-align: right">
+						<el-col :span="24"  >
+							<el-form ref="selectPortCheckServiceCheckInfoForm" :inline="true" :model="selectPortCheckServiceCheckInfoForm" label-width="80px">
+								<el-form-item label="筛选条件">
+									<el-input v-model="selectPortCheckServiceCheckInfoForm.searchContent" placeholder="请输入搜索内容.."></el-input>
+								</el-form-item>
+								<el-form-item>
+									<el-button @click="resetForm('selectPortCheckServiceCheckInfoForm')">重置</el-button>
+									<el-button type="primary" @click="selectPortCheckServiceCheckList()">搜索</el-button>
+								</el-form-item>
+							</el-form>
+						</el-col>
+					</el-row>
+					<el-row :gutter="24">
+						<el-col :span="3"  class="my-service-prot-check-card" @click.native="selectedPortCheckServiceCheck(obj)"  v-for="obj,index in servicePortCheckInfoList" >
+							<el-card shadow="always" :body-style="{ padding: '0px' }"  >
+								<span v-if="!obj.checkServiceWhetherNormal" class="el-icon-circle-close service-port-check-close" @click.stop="removeServiceCheck(obj,index)" ></span>
+								<img th:src="@{/images/service-port-check.jpg}" class="image" >
+								<div style="padding: 14px; font-size: 13px">
+									<div class="bottom clearfix">
+										<span>本机内网：{{obj.intranetIp}}</span>
+									</div>
+									<div class="bottom clearfix">
+										<span>本机外网：{{obj.internetIp}}</span>
+									</div>
+									<div class="bottom clearfix">
+										<span>连通时间：{{obj.checkServiceFileAccessTime}}</span>
+									</div>
+									<div class="bottom clearfix">
+										<el-tooltip class="item" effect="dark" :content="obj.checkServiceDesc" placement="bottom-start">
+											<span>本机描述：{{obj.checkServiceDesc}}</span>
+										</el-tooltip>
+									</div>
+									<div class="bottom clearfix">
+										<span>健康状态：<span class="el-icon-s-opportunity" :class="[obj.checkServiceWhetherNormal?'is-normal':'is-no-normal']"  :title="obj.checkServiceWhetherNormal?'正常':'异常'"></span></span>
+									</div>
+
+								</div>
+							</el-card>
+						</el-col>
+
+					</el-row>
+				</el-tab-pane>
+				<el-tab-pane label="检测列表" name="tab2" v-if="currentPortCheckServiceCheckInfo" >
+					<span slot="label"><i class="el-icon-s-promotion"></i>检测列表 </span>
+					<el-row :gutter="24">
+						<el-col :span="24" >
+							<el-divider content-position="center">
+								检测服务标识：内网【{{currentPortCheckServiceCheckInfo.intranetIp}}】 外网【{{currentPortCheckServiceCheckInfo.internetIp}}】
+								<span class="el-icon-s-opportunity" :class="[currentPortCheckServiceCheckInfo.checkServiceWhetherNormal?'is-normal':'is-no-normal']"  :title="currentPortCheckServiceCheckInfo.checkServiceWhetherNormal?'正常':'异常'"></span>
+							</el-divider>
+						</el-col>
+					</el-row>
+					<el-row :gutter="24" class="service-port-check">
+						<el-col :span="24"  v-if="currentPortCheckServiceCheckInfo.checkServiceWhetherNormal">
+							<el-button size="mini" type="primary"  icon="el-icon-s-promotion" @click="currentPortCheckServiceCheckInfo.checkServiceStart?startOrStopPortCheckService():updateServiceCheckAccessUrlDialog=true">{{currentPortCheckServiceCheckInfo.checkServiceStart?'暂停服务检测':'启动服务检测'}}</el-button>
+							<span style="color: #e6a23c;font-size: 12px;" v-if="!currentPortCheckServiceCheckInfo.checkServiceStart">注意：当前检测服务未开启检测操作!</span>
+							<span style="color: #66b1ff;font-size: 12px;" v-if="currentPortCheckServiceCheckInfo.checkServiceStart">提示：检测中! 该检测服务访问地址：{{updateServiceCheckAccessUrl}}</span>
+						</el-col>
+						<el-col :span="12" >
+							<el-card class="box-card">
+								<div slot="header" class="clearfix">
+									<span style="font-weight: 700">本地主机</span>
+									<el-button v-if="currentPortCheckServiceCheckInfo.checkServiceWhetherNormal&&currentPortCheckServiceCheckInfo.checkServiceStart" style="float:right;padding:3px 0" type="text" @click="showUpdatePortCheckServiceDialog('1')">新增</el-button>
+								</div>
+								<el-table
+										:data="currentPortCheckServiceCheckInfo.localPortCheck"
+										style="width: 100%">
+									<el-table-column
+											label="主机地址"
+											width="170"
+											>
+										<template slot-scope="scope">
+											<span>{{ scope.row.operationTargetHost }}</span>
+										</template>
+									</el-table-column>
+									<el-table-column
+											label="地址"
+											width="120"
+											>
+										<template slot-scope="scope">
+											<span>{{ scope.row.operationTargetPort }}</span>
+										</template>
+									</el-table-column>
+									<el-table-column
+											label="近期检测时间"
+											width="180"
+											>
+										<template slot-scope="scope">
+											<span>{{ scope.row.checkTime }}</span>
+										</template>
+									</el-table-column>
+
+									<el-table-column
+											label="检测状态"
+											width="100"
+											>
+										<template slot-scope="scope">
+											<span class="el-icon-s-promotion" :class="[scope.row.normal&&currentPortCheckServiceCheckInfo.checkServiceWhetherNormal&&currentPortCheckServiceCheckInfo.checkServiceStart?'is-normal':'is-no-normal']">{{ currentPortCheckServiceCheckInfo.checkServiceWhetherNormal?(currentPortCheckServiceCheckInfo.checkServiceStart?scope.row.normal?'正常':'异常':'异常'):'未知' }}</span>
+										</template>
+									</el-table-column>
+
+									<el-table-column
+											label="描述"
+											width="200"
+											:show-overflow-tooltip="true"
+											>
+										<template slot-scope="scope">
+											<span>{{ scope.row.targetDesc}}</span>
+										</template>
+									</el-table-column>
+									<el-table-column label="操作">
+										<template slot-scope="scope">
+											<el-button
+												v-if="currentPortCheckServiceCheckInfo.checkServiceWhetherNormal&&currentPortCheckServiceCheckInfo.checkServiceStart"
+												size="mini"
+												type="danger"
+												@click="removePortCheckService(scope.row,'1',scope.$index)">删除</el-button>
+										</template>
+									</el-table-column>
+								</el-table>
+							</el-card>
+						</el-col>
+
+						<el-col :span="12" >
+							<el-card class="box-card">
+								<div slot="header" class="clearfix">
+									<span style="font-weight: 700">远程主机</span>
+									<el-button v-if="currentPortCheckServiceCheckInfo.checkServiceWhetherNormal&&currentPortCheckServiceCheckInfo.checkServiceStart" style="float:right;padding:3px 0" type="text" @click="showUpdatePortCheckServiceDialog('2')">新增</el-button>
+								</div>
+								<el-table
+										:data="currentPortCheckServiceCheckInfo.remotePortCheck"
+										style="width: 100%">
+									<el-table-column
+											label="主机地址"
+											width="170"
+									>
+										<template slot-scope="scope">
+											<span>{{ scope.row.operationTargetHost }}</span>
+										</template>
+									</el-table-column>
+									<el-table-column
+											label="地址"
+											width="120"
+									>
+										<template slot-scope="scope">
+											<span>{{ scope.row.operationTargetPort }}</span>
+										</template>
+									</el-table-column>
+									<el-table-column
+											label="近期检测时间"
+											width="180"
+									>
+										<template slot-scope="scope">
+											<span>{{ scope.row.checkTime }}</span>
+										</template>
+
+									</el-table-column>
+
+									<el-table-column
+											label="检测状态"
+											width="100"
+									>
+										<template slot-scope="scope">
+											<span class="el-icon-s-promotion" :class="[scope.row.normal&&currentPortCheckServiceCheckInfo.checkServiceWhetherNormal&&currentPortCheckServiceCheckInfo.checkServiceStart?'is-normal':'is-no-normal']">{{ currentPortCheckServiceCheckInfo.checkServiceWhetherNormal?(currentPortCheckServiceCheckInfo.checkServiceStart?scope.row.normal?'正常':'异常':'异常'):'未知' }}</span>
+										</template>
+									</el-table-column>
+
+									<el-table-column
+											label="描述"
+											width="200"
+											:show-overflow-tooltip="true"
+									>
+										<template slot-scope="scope">
+											<span>{{ scope.row.targetDesc}}</span>
+										</template>
+									</el-table-column>
+									<el-table-column label="操作">
+										<template slot-scope="scope">
+											<el-button
+													v-if="currentPortCheckServiceCheckInfo.checkServiceWhetherNormal&&currentPortCheckServiceCheckInfo.checkServiceStart"
+													size="mini"
+													type="danger"
+													@click="removePortCheckService(scope.row,'2',scope.$index)">删除</el-button>
+										</template>
+									</el-table-column>
+								</el-table>
+							</el-card>
+						</el-col>
+					</el-row>
+				</el-tab-pane>
+			</el-tabs>
+
+			<el-dialog
+					:title="'新增'+updatePortCheckServiceDialogTitle+'主机'"
+					:visible.sync="updatePortCheckServiceDialog"
+					width="20%">
+
+				<el-form ref="updatePortCheckServiceForm"  :model="updatePortCheckServiceForm" :rules="updatePortCheckServiceFormRules" label-width="80px">
+					<el-form-item label="主机地址" prop="hostAddress">
+						<el-input v-model="updatePortCheckServiceForm.hostAddress" :disabled="updatePortCheckServiceForm.isLocal=='1'" placeholder="请输入主机地址"></el-input>
+					</el-form-item>
+
+					<el-form-item label="主机端口" prop="hostPort">
+						<el-input v-model="updatePortCheckServiceForm.hostPort" placeholder="请输入主机端口"></el-input>
+					</el-form-item>
+
+					<el-form-item label="主机描述" prop="hostDesc">
+						<el-input v-model="updatePortCheckServiceForm.hostDesc" type="textarea" placeholder="请输入主机描述"></el-input>
+					</el-form-item>
+				</el-form>
+
+				<span slot="footer" class="dialog-footer">
+					<el-button @click="resetForm('updatePortCheckServiceForm')">重 置</el-button>
+					<el-button type="primary" @click="updatePortCheckService('updatePortCheckServiceForm')">确 定</el-button>
+				  </span>
+			</el-dialog>
+
+
+			<el-dialog
+					:title="'检测服务访问地址操作'"
+					:visible.sync="updateServiceCheckAccessUrlDialog"
+					width="20%">
+
+					<el-form>
+						<el-form-item label="" >
+							<el-input v-model="updateServiceCheckAccessUrl"  placeholder="检测服务访问地址格式：IP:端口 或者 IP "></el-input>
+						</el-form-item>
+					</el-form>
+				<el-button type="primary" style="width:100%" @click="startOrStopPortCheckService()">确 定</el-button>
+			</el-dialog>
+
+		</el-main>
+		<!--==============================主操作区域结束======================================-->
+	</div>
+</body>
+</html>
+
+<!--引入 vue、element-ui、加密组件组件及样式信息-->
+<link   th:href="@{/css/element-ui.css}"    type="text/css" rel="stylesheet" >
+<script th:src="@{/js/jquery-1.9.1.min.js}" type="text/javascript"></script>
+<script th:src="@{/js/vue.min.js}"			type="text/javascript"></script>
+<script th:src="@{/js/element-ui.js}"		type="text/javascript"></script>
+<script th:src="@{/js/encrypt.js}"  		type="text/javascript"></script>
+<!-- 引入自定义组件及样式信息-->
+<link   th:href="@{/css/main.css}"  	    type="text/css" rel="stylesheet" >
+<script th:src="@{/js/main.js}"  			type="text/javascript"></script>
+
+
+<style type="text/css">
+	.is-normal{
+		color: #67C23A
+	}
+	.is-no-normal{
+		color: #f00;
+	}
+	.clearfix{
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+	/*卡片样式*/
+	.my-service-prot-check-card{
+		cursor:pointer;
+		position: relative;
+		margin-right: 32px;
+		margin-bottom: 32px;
+	}
+	/*服务关闭按钮*/
+	.my-service-prot-check-card .service-port-check-close{
+		top: 0px;
+		right: 0px;
+		color: #f00;
+		cursor:pointer;
+		position: absolute;
+	}
+	/*切换选项卡样式*/
+	.el-tab-pane{
+		min-height: 850px;
+	}
+	/*检测服务图片样式*/
+	.image {
+		width: 100%;
+		height: 100px;
+
+		display: block;
+	}
+	/*二次修改文字提示框样式*/
+	.el-tooltip__popper{
+		width: 200px;
+	}
+
+	/*检测列表样式信息*/
+	.service-port-check .el-col{
+		margin-top: 20px;
+		padding-left: 12px !important;
+		padding-right: 12px !important;
+	}
+	.service-port-check .el-card{
+		min-height: 730px;
+	}
+</style>
+<script type="text/javascript"  th:inline="javascript">
+
+	var app = new Vue({
+		el: "#app",
+		data: {
+			PRIVATE_KEY:PRIVATE_KEY,
+			activeTab:'tab1',						//默认指定选中切换卡
+			updateServiceCheckAccessUrl:'',			//检测服务访问地址
+			updateServiceCheckAccessUrlDialog:false,//更新服务检测请求地址弹出框
+			updatePortCheckServiceDialog:false, 			//更新服务弹出框
+			updatePortCheckServiceDialogTitle:'',  	 	//更新服务弹出框标题
+			updatePortCheckServiceForm:{					//更新服务信息表单
+				updateType:'',	//修改类型
+				isLocal:'',     //是否本地
+				hostPort:'',    //主机
+				hostAddress:'',	//主机地址
+				hostDesc:''		//主机描述
+			},
+			updatePortCheckServiceFormRules:{			//更新服务信息表单校验
+				hostAddress: [
+					{ required: true, message: '请输入主机地址', trigger: 'blur' },
+				],
+				hostPort: [
+					{ required: true, message: '请输入主机', trigger: 'blur' },
+				]
+
+			},
+			newRefreshTime:"",						//定义最新刷新时间
+			currentPortCheckServiceCheckInfo:{}, 		//当前检测服务信息
+			selectPortCheckServiceCheckInfoForm:{		//查询服务检测信息表单
+				searchContent:''
+			},
+
+			servicePortCheckInfoList:[				//检测服务信息列表
+				// {
+				// 	"checkServiceDesc":"对检测服务进行简单描述",
+				// 	"checkServiceFileAccessTime":"2021-05-13 15:54:45",
+				// 	"checkServiceStart":false,
+				// 	"checkServiceWhetherNormal":true,
+				// 	"internetIp":"222.67.170.185",
+				// 	"intranetIp":"192.168.0.183",
+				// 	"localPortCheck":[
+				// 		{
+				// 			"operationTargetHost":"本地主机IP1",
+				// 			"operationTargetPort":"本地主机1",
+				// 			"targetDesc":"本地主机描述1"
+				// 		},
+				// 		{
+				// 			"operationTargetHost":"本地主机IP1",
+				// 			"operationTargetPort":"本地主机1",
+				// 			"targetDesc":"本地主机描述2"
+				// 		}
+				// 	],
+				// 	"remotePortCheck":[
+				// 		{
+				// 			"operationTargetHost":"远程主机IP1",
+				// 			"operationTargetPort":"远程主机1",
+				// 			"targetDesc":"远程主机描述1"
+				// 		},
+				// 		{
+				// 			"operationTargetHost":"远程主机IP2",
+				// 			"operationTargetPort":"远程主机2",
+				// 			"targetDesc":"远程主机描述2"
+				// 		}
+				// 	]
+				// }
+			]
+		},
+		mounted(){
+			this.newRefreshTime=this.dateFormat("YYYY-mm-dd HH:MM:SS", new Date());
+			this.selectPortCheckServiceCheckList();
+			//初始化一个默认服务检测数据
+			if(this.servicePortCheckInfoList.length){
+				this.currentPortCheckServiceCheckInfo=this.servicePortCheckInfoList[0]
+			}
+
+			//后面每五秒调用依次检测服务列表信息
+			setInterval( ()=> {
+				console.log("调取服务检测信息")
+				this.selectPortCheckServiceCheckList();
+				this.newRefreshTime=this.dateFormat("YYYY-mm-dd HH:MM:SS", new Date());
+			},5000)
+		},
+		methods: {
+			selectedPortCheckServiceCheck(servicePortCheckInfo){
+				this.currentPortCheckServiceCheckInfo=servicePortCheckInfo;
+				this.activeTab="tab2";
+				this.tabClick({label:"检测列表"})
+			},
+			//选项卡切换方法
+			tabClick(tabObjInfo){
+				if(tabObjInfo.label=="检测列表"&&!this.currentPortCheckServiceCheckInfo.checkServiceWhetherNormal){
+					this.$message({
+						message: "当前检测服务未连接上管控中心！",
+						type: 'warning'
+					});
+				}else if(tabObjInfo.label=="检测列表"){
+					this.$message({
+						message: '当前检测服务标识：内网【'+this.currentPortCheckServiceCheckInfo.intranetIp+'】 外网【'+this.currentPortCheckServiceCheckInfo.internetIp+'】',
+						type: 'success'
+					});
+				}
+				this.updateServiceCheckAccessUrl=this.currentPortCheckServiceCheckInfo.httpCheckServerUrl
+			},
+
+			//显示更新服务弹出框
+			showUpdatePortCheckServiceDialog(isLocalInfo){
+				//移除原表单信息
+				this.resetForm('updatePortCheckServiceForm');
+				this.updatePortCheckServiceDialog=true;
+				this.updatePortCheckServiceDialogTitle=isLocalInfo=='1'?"本地":"远程";
+				this.updatePortCheckServiceForm.hostAddress=isLocalInfo=='1'?"127.0.0.1":"";
+				this.updatePortCheckServiceForm.isLocal=isLocalInfo;
+			},
+
+			//更新端口检测服务
+			updatePortCheckService(formName){
+				this.$refs[formName].validate((valid) => {
+					this.updatePortCheckServiceForm.serviceTagInfo=this.currentPortCheckServiceCheckInfo.internetIp+"_"+this.currentPortCheckServiceCheckInfo.intranetIp;
+					if (valid) {
+						this.updatePortCheckServiceForm.updateType=1;
+						$.ajax({
+							url:"/port/update/check/service",
+							type:"post",
+							dataType:"json",
+							data:this.updatePortCheckServiceForm,
+							success:(data)=>{
+								data=this.decryptData(data);
+								if(data.code==200){
+									this.$message({
+										type: 'success',
+										message: data.result
+									});
+									this.updatePortCheckServiceDialog=false;
+								}else if(data.code!=500){
+									this.$message.warning(data.result);
+								}else{
+									this.$message.error(data.result);
+								}
+							},
+							error:()=>{}
+						});
+					}
+				});
+			},
+
+			//删除端口检测服务
+			removePortCheckService(servicePortObjInfo,isLcal,index){
+				this.$confirm('此操作将移除该服务, 是否继续?', '提示', {
+					confirmButtonText: '确定',
+					type: 'warning',
+				}).then(() => {
+					this.updatePortCheckServiceForm.updateType=2;
+					this.updatePortCheckServiceForm.hostPort=servicePortObjInfo.operationTargetPort;
+					this.updatePortCheckServiceForm.hostAddress=servicePortObjInfo.operationTargetHost;
+					this.updatePortCheckServiceForm.isLocal=isLcal;
+					this.updatePortCheckServiceForm.serviceTagInfo=this.currentPortCheckServiceCheckInfo.internetIp+"_"+this.currentPortCheckServiceCheckInfo.intranetIp;
+					//定义请求路径
+					$.ajax({
+						url:"/port/update/check/service",
+						type:"post",
+						dataType:"json",
+						data:this.updatePortCheckServiceForm,
+						success:(data)=>{
+							data=this.decryptData(data);
+							if(data.code==200){
+								this.$message({
+									type: 'success',
+									message: data.result
+								});
+							}else if(data.code!=500){
+								this.$message.warning(data.result);
+							}else{
+								this.$message.error(data.result);
+							}
+						},
+						error:()=>{}
+					});
+				}).catch(() => {
+					this.$message({
+						type: 'success',
+						message: '已取消'
+					});
+				});
+			},
+
+			//开启和关闭端口检测服务
+			startOrStopPortCheckService(){
+				if(this.updateServiceCheckAccessUrl){
+					//定义请求路径
+					$.ajax({
+						url:"/port/start-or-stop/check/service",
+						type:"post",
+						dataType:"json",
+						data:{
+							serviceTagInfo:this.currentPortCheckServiceCheckInfo.internetIp+"_"+this.currentPortCheckServiceCheckInfo.intranetIp,
+							httpCheckServerUrl:this.updateServiceCheckAccessUrl
+						},
+						success:(data)=>{
+							console.log(data);
+							data=this.decryptData(data);
+							if(data.code==200){
+								this.$message({
+									type: 'success',
+									message: data.result
+								});
+								this.updateServiceCheckAccessUrlDialog=false;
+							}else if(data.code!=500){
+								this.$message.warning(data.result);
+							}else{
+								this.$message.error(data.result);
+							}
+						},
+						error:()=>{}
+					});
+				}else{
+					this.$message.warning("检测服务访问地址为空！");
+				}
+			},
+
+			//查询检测服务列表信息列表
+			selectPortCheckServiceCheckList(){
+
+				$.ajax({
+					async:false,
+					url:"/port/find/check/info/list",
+					type:"post",
+					dataType:"json",
+					data:this.selectPortCheckServiceCheckInfoForm.searchContent,
+					success:(data)=>{
+						data=this.decryptData(data);
+						if(data.code==200){
+							let resultInfoList=data.result;
+							//是否统计健康数量
+							let onlineNumber=0;
+							let offlineNumber=0;
+							resultInfoList.forEach(
+								(obj,index)=>{
+									//循环比较当前最新检测服务列表的健康统计
+									let currentTagInfo=obj.internetIp+"_"+obj.intranetIp
+									let flag=true;
+
+									//刷新当前检测服务数据
+									if(JSON.stringify(this.currentPortCheckServiceCheckInfo=="{}")&&this.currentPortCheckServiceCheckInfo.internetIp+"_"+this.currentPortCheckServiceCheckInfo.intranetIp==currentTagInfo){
+										this.currentPortCheckServiceCheckInfo=obj;
+									}
+
+									this.servicePortCheckInfoList.forEach(
+										(obj2,index2)=>{
+											let currentTagInfo2=obj2.internetIp+"_"+obj2.intranetIp
+											if(currentTagInfo==currentTagInfo2){
+												flag=false;
+											}
+											if(currentTagInfo==currentTagInfo2&&obj.checkServiceWhetherNormal!=obj2.checkServiceWhetherNormal){
+												obj.checkServiceWhetherNormal?offlineNumber++:onlineNumber++;
+											}
+										}
+									)
+									if(flag){
+										offlineNumber++;
+									}
+								}
+							)
+
+							if(offlineNumber!=0){
+								this.$message({
+									message: '提示：有'+offlineNumber+"个检测服务连通管控中心！",
+									type: 'success'
+								});
+							}
+							if(onlineNumber!=0){
+								this.$message({
+									message: '提示：有'+onlineNumber+"个检测服务未连通管控中心！",
+									type: 'warning'
+								});
+							}
+							this.servicePortCheckInfoList=resultInfoList;
+
+
+						}else if(data.code!=500){
+							this.$message.warning(data.result);
+						}else{
+							this.$message.error(data.result);
+						}
+					},
+					error:()=>{}
+				});
+
+			},
+
+			//移除指定服务检测信息
+			removeServiceCheck(obj,index){
+				this.$confirm('此操作将移除该检测服务, 是否继续?', '提示', {
+					confirmButtonText: '确定',
+					type: 'warning',
+				}).then(() => {
+					let parameterInfo={
+						tagInfo:obj.internetIp+"_"+obj.intranetIp
+					}
+					$.ajax({
+						url:"/port/remove/check/service",
+						type:"post",
+						dataType:"json",
+						data:parameterInfo,
+						success:(data)=>{
+							data=this.decryptData(data);
+							if(data.code==200){
+								this.$message({
+									type: 'success',
+									message: '移除成功'
+								});
+								this.servicePortCheckInfoList.splice(index,1);
+							}else if(data.code!=500){
+								this.$message.warning(data.result);
+							}else{
+								this.$message.error(data.result);
+							}
+						},
+						error:()=>{}
+					})
+				}).catch(() => {
+					this.$message({
+						type: 'success',
+						message: '已取消'
+					});
+				});
+			},
+
+			resetForm(formName) {
+				if(formName=='selectPortCheckServiceCheckInfoForm'){
+					this.selectPortCheckServiceCheckInfoForm={
+						searchContent:''
+					}
+				}else if(formName=='updatePortCheckServiceForm') {
+					this.updatePortCheckServiceForm = {												//更新服务信息表单
+						hostPort: '',       													//主机
+						hostDesc: '',															//主机描述
+						updateType: '',															//修改类型
+						isLocal: this.updatePortCheckServiceForm.isLocal,     						//是否本地
+						hostAddress: this.updatePortCheckServiceForm.isLocal=='1'?"127.0.0.1":"",	//主机地址
+					}
+				}
+			},
+			dateFormat(fmt, date) {
+				let ret;
+				const opt = {
+					"Y+": date.getFullYear().toString(),        // 年
+					"m+": (date.getMonth() + 1).toString(),     // 月
+					"d+": date.getDate().toString(),            // 日
+					"H+": date.getHours().toString(),           // 时
+					"M+": date.getMinutes().toString(),         // 分
+					"S+": date.getSeconds().toString()          // 秒
+					// 有其他格式化字符需求可以继续添加，必须转化成字符串
+				};
+				for (let k in opt) {
+					ret = new RegExp("(" + k + ")").exec(fmt);
+					if (ret) {
+						fmt = fmt.replace(ret[1], (ret[1].length == 1) ? (opt[k]) : (opt[k].padStart(ret[1].length, "0")))
+					};
+				};
+				return fmt;
+			},
+
+			//解密数据信息
+			decryptData(encryptData){
+				let encrypt = new JSEncrypt();
+				encrypt.setPrivateKey(this.PRIVATE_KEY);
+				console.log(encrypt.decryptUnicodeLong(encryptData));
+				let decryptInfo=JSON.parse(encrypt.decryptUnicodeLong(encryptData));
+				return decryptInfo;
+			}
+		}
+	});
+</script>
