@@ -23,7 +23,6 @@ public class SecurityController {
      * 获取：公匙信息
      * @return
      */
-    @ResponseEncrypt
     @RequestMapping(value = "/key",produces="application/json;charset=utf-8")
     public Object getSecurityKey(){
         SecurityConfigFile securityKey = (SecurityConfigFile)securityService.getSecurityKey();

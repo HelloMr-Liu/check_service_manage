@@ -1,13 +1,13 @@
 package org.king2.check_service_manage.service.impl;
 
 import com.alibaba.fastjson.JSON;
-import org.bouncycastle.jcajce.provider.asymmetric.RSA;
 import org.king2.check_service_manage.config.SystemFilterConfiguration;
 import org.king2.check_service_manage.constant.RedisKeyEnum;
 import org.king2.check_service_manage.constant.SystemResultCodeEnum;
 import org.king2.check_service_manage.entity.*;
 import org.king2.check_service_manage.service.SecurityService;
 import org.king2.check_service_manage.service.PortCheckServiceService;
+import org.king2.check_service_manage.utils.AESUtil;
 import org.king2.check_service_manage.utils.ApplicationUtil;
 import org.king2.check_service_manage.utils.RSAUtil;
 import org.king2.check_service_manage.utils.RedisUtil;
@@ -20,10 +20,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -160,21 +157,24 @@ public class PortCheckServiceServiceImpl implements PortCheckServiceService {
 
                 SecurityConfigFile localSecurityConfig = (SecurityConfigFile)securityService.getSecurityKey();
                 //获取对应的安全钥匙信息
-                String reponseInfo1 = ApplicationUtil.sendPost("http://"+servicePortCheckInfo.getHttpCheckServerUrl()+"/port_check_service/security/key",localSecurityConfig.getPublicKey());
+                String reponseInfo1 = ApplicationUtil.sendPost("http://"+servicePortCheckInfo.getHttpCheckServerUrl()+"/port_check_service/security/key",null);
                 if(!StringUtils.isEmpty(reponseInfo1)){
                     //进行数据解密
-                    reponseInfo1=reponseInfo1.replaceAll("\"","");
-                    reponseInfo1=RSAUtil.decryptByPrivateKey(reponseInfo1,localSecurityConfig.getPrivateKey());
-                    logger.warn("远程检测服务获取安全钥匙信息-响应结果："+reponseInfo1);
+                    logger.info("远程检测服务获取安全钥匙信息-响应结果："+reponseInfo1);
                     SecurityConfigFile remoteSecurityConfig = JSON.parseObject(reponseInfo1, SecurityConfigFile.class);
 
-                    //将检测信息发送给远程管理中心服务上
-                    String encryptJsonInfo= RSAUtil.encryptByPublicKey(JSON.toJSONString(servicePortCheckInfo),remoteSecurityConfig.getPublicKey());
-                    String reponseInfo2=ApplicationUtil.sendPost("http://"+servicePortCheckInfo.getHttpCheckServerUrl()+"/port_check_service/port/check/service/update/file?encryptJsonInfo="+encryptJsonInfo,localSecurityConfig.getPublicKey());
+                    //生成一个AES密匙信息,并对明文数据进行加密操作
+                    String aesEncryptKey= ApplicationUtil.getStringRandom(16);
+                    String encryptJsonInfo= AESUtil.encrypt(JSON.toJSONString(servicePortCheckInfo),aesEncryptKey,aesEncryptKey);
+
+                    //并使用RSA进行对AES密匙加密
+                    String encryptAesEncryptKey= RSAUtil.encryptByPublicKey(aesEncryptKey,remoteSecurityConfig.getPublicKey());
+
+                    String reponseInfo2=ApplicationUtil.sendPost("http://"+servicePortCheckInfo.getHttpCheckServerUrl()+"/port_check_service/port/check/service/update/file?encryptJsonInfo="+encryptJsonInfo,encryptAesEncryptKey);
                     //进行数据解密
-                    reponseInfo2=reponseInfo2.replaceAll("\"","");
-                    reponseInfo2=RSAUtil.decryptByPrivateKey(reponseInfo2,localSecurityConfig.getPrivateKey());
-                    logger.warn("远程检测服务发送检测信息-响应结果："+reponseInfo2);
+                    reponseInfo2=reponseInfo2.substring(1,reponseInfo2.length()-1);
+                    reponseInfo2=AESUtil.decrypt(reponseInfo2,aesEncryptKey,aesEncryptKey);
+                    logger.info("远程检测服务发送检测信息-响应结果："+reponseInfo2);
                 }
             }
             return SystemResultVo.ok(" operation ok  wait service refresh ");

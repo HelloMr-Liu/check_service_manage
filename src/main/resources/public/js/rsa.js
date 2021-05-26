@@ -5333,12 +5333,8 @@ version: 2.9.0
         JSEncrypt.version = "3.0.0-beta.1";
         return JSEncrypt;
     }());
-
     window.JSEncrypt = JSEncrypt;
-
     exports.JSEncrypt = JSEncrypt;
     exports.default = JSEncrypt;
-
     Object.defineProperty(exports, '__esModule', { value: true });
-
 })));

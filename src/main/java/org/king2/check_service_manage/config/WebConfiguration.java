@@ -9,6 +9,7 @@ import com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -38,8 +39,9 @@ public class WebConfiguration implements WebMvcConfigurer {
                 converters.remove(i);
             }
         }
-        FastJsonHttpMessageConverter fastJsonHttpMessageConverter = new FastJsonHttpMessageConverter();
 
+        //JSON实体对象转换器
+        FastJsonHttpMessageConverter fastJsonHttpMessageConverter = new FastJsonHttpMessageConverter();
         //自定义fastJson配置
         FastJsonConfig config = new FastJsonConfig();
         SerializeConfig serializeConfig = SerializeConfig.globalInstance;
@@ -47,10 +49,10 @@ public class WebConfiguration implements WebMvcConfigurer {
         serializeConfig.put(Long.TYPE , ToStringSerializer.instance);
         config.setSerializeConfig(serializeConfig);         //配置Long转String类型 ， 解决前后端交互， id过长，失去精度的问题
         config.setSerializerFeatures(
-//                SerializerFeature.WriteMapNullValue,        // 是否输出值为null的字段,默认为false,我们将它打开
+                SerializerFeature.WriteMapNullValue,        // 是否输出值为null的字段,默认为false,我们将它打开
                 SerializerFeature.WriteNullListAsEmpty,     // 将Collection类型字段的字段空值输出为[]
                 SerializerFeature.WriteNullStringAsEmpty,   // 将字符串类型字段的空值输出为空字符串
-//                SerializerFeature.WriteNullNumberAsZero,    // 将数值类型字段的空值输出为0
+                SerializerFeature.WriteNullNumberAsZero,    // 将数值类型字段的空值输出为0
                 SerializerFeature.WriteDateUseDateFormat,
                 SerializerFeature.DisableCircularReferenceDetect    // 禁用循环引用
         );
@@ -63,9 +65,11 @@ public class WebConfiguration implements WebMvcConfigurer {
         fastMediaTypes.add(MediaType.valueOf(MediaType.TEXT_HTML_VALUE + ";charset=UTF-8"));
         fastMediaTypes.add(MediaType.valueOf(MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8"));
         fastJsonHttpMessageConverter.setSupportedMediaTypes(fastMediaTypes);
+
+        //解决返回字符串带双引号字符串转换器
+        StringHttpMessageConverter stringConverter = new StringHttpMessageConverter();
+        converters.add(stringConverter);
         converters.add(fastJsonHttpMessageConverter);
     }
-
-
 
 }

@@ -8,6 +8,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.*;
 import java.net.*;
 import java.util.Enumeration;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -216,6 +217,30 @@ public class ApplicationUtil {
         return ipAddress;
     }
 
+    /**
+     * 生成随机用户名，数字和字母组成,
+     * @param length  名字长度
+     * @return
+     */
+    public static String getStringRandom(int length) {
+        String val = "";
+        Random random = new Random();
+
+        //参数length，表示生成几位随机数
+        for(int i = 0; i < length; i++) {
+            String charOrNum = random.nextInt(2) % 2 == 0 ? "char" : "num";
+            //输出字母还是数字
+            if( "char".equalsIgnoreCase(charOrNum) ) {
+                //输出是大写字母还是小写字母
+                int temp = random.nextInt(2) % 2 == 0 ? 65 : 97;
+                val += (char)(random.nextInt(26) + temp);
+            } else if( "num".equalsIgnoreCase(charOrNum) ) {
+                val += String.valueOf(random.nextInt(10));
+            }
+        }
+        return val;
+    }
+
 
     /**
      * 向指定 URL 发送POST方法的请求
@@ -225,7 +250,7 @@ public class ApplicationUtil {
      *            请求参数，请求参数应该是 name1=value1&name2=value2 的形式。
      * @return 所代表远程资源的响应结果
      */
-    public static String sendPost(String url,String publicKey) {
+    public static String sendPost(String url,String encryptAesEncryptKey) {
         PrintWriter out = null;
         BufferedReader in = null;
         String result = "";
@@ -237,14 +262,20 @@ public class ApplicationUtil {
             conn.setRequestProperty("accept", "*/*");
             conn.setRequestProperty("connection", "Keep-Alive");
             conn.setRequestProperty("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
-            conn.setRequestProperty("publicKey", publicKey);
+
+//            if(!StringUtils.isEmpty(publicKey))
+//            conn.setRequestProperty("publicKey", publicKey);
+
+            if(!StringUtils.isEmpty(encryptAesEncryptKey))
+                conn.setRequestProperty("encryptAesEncryptKey", encryptAesEncryptKey);
 
             // 发送POST请求必须设置如下两行
             conn.setDoOutput(true);
             conn.setDoInput(true);
             // 获取URLConnection对象对应的输出流
             out = new PrintWriter(conn.getOutputStream());
-
+            // 发送请求参数
+            //out.print(param);
             // flush输出流的缓冲
             out.flush();
             // 定义BufferedReader输入流来读取URL的响应
@@ -267,10 +298,11 @@ public class ApplicationUtil {
                 }
             }
             catch(IOException ex){
-                ex.printStackTrace();
+                logger.warn(ApplicationUtil.getExceptionMessage(ex));
             }
         }
         return result;
     }
+
 
 }
