@@ -86,6 +86,8 @@ public class SystemFilterConfiguration implements Filter {
                     }
                     filterChain.doFilter(myHttpServletRequest, response);
                 }
+            }else{
+                filterChain.doFilter(myHttpServletRequest, response);
             }
         } catch (Exception e) {
             try {
