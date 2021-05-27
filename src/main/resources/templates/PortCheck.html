@@ -328,11 +328,11 @@
 	var app = new Vue({
 		el: "#app",
 		data: {
-			activeTab:'tab1',						//默认指定选中切换卡
-			updateServiceCheckAccessUrl:'',			//检测服务访问地址
-			updateServiceCheckAccessUrlDialog:false,//更新服务检测请求地址弹出框
+			activeTab:'tab1',								//默认指定选中切换卡
+			updateServiceCheckAccessUrl:'',					//检测服务访问地址
+			updateServiceCheckAccessUrlDialog:false,		//更新服务检测请求地址弹出框
 			updatePortCheckServiceDialog:false, 			//更新服务弹出框
-			updatePortCheckServiceDialogTitle:'',  	 	//更新服务弹出框标题
+			updatePortCheckServiceDialogTitle:'',  	 		//更新服务弹出框标题
 			updatePortCheckServiceForm:{					//更新服务信息表单
 				updateType:'',	//修改类型
 				isLocal:'',     //是否本地
@@ -349,7 +349,7 @@
 				]
 
 			},
-			newRefreshTime:"",						//定义最新刷新时间
+			newRefreshTime:"",							//定义最新刷新时间
 			currentPortCheckServiceCheckInfo:{}, 		//当前检测服务信息
 			selectPortCheckServiceCheckInfoForm:{		//查询服务检测信息表单
 				searchContent:''
@@ -357,34 +357,29 @@
 
 			servicePortCheckInfoList:[				//检测服务信息列表
 				// {
-				// 	"checkServiceDesc":"对检测服务进行简单描述",
-				// 	"checkServiceFileAccessTime":"2021-05-13 15:54:45",
-				// 	"checkServiceStart":false,
+				// 	"checkServiceDesc":"222.67.170.185_192.168.0.211 check service",
+				// 	"checkServiceFileAccessTime":"2021-05-26 22:04:00",
+				// 	"checkServiceStart":true,
 				// 	"checkServiceWhetherNormal":true,
+				// 	"httpCheckServerUrl":"localhost:8300",
 				// 	"internetIp":"222.67.170.185",
-				// 	"intranetIp":"192.168.0.183",
+				// 	"intranetIp":"192.168.0.211",
 				// 	"localPortCheck":[
 				// 		{
-				// 			"operationTargetHost":"本地主机IP1",
-				// 			"operationTargetPort":"本地主机1",
-				// 			"targetDesc":"本地主机描述1"
-				// 		},
-				// 		{
-				// 			"operationTargetHost":"本地主机IP1",
-				// 			"operationTargetPort":"本地主机1",
-				// 			"targetDesc":"本地主机描述2"
+				// 			"checkTime":"2021-05-26 22:04:00",
+				// 			"normal":true,
+				// 			"operationTargetHost":"127.0.0.1",
+				// 			"operationTargetPort":"3306",
+				// 			"targetDesc":"本机mysql服务"
 				// 		}
 				// 	],
 				// 	"remotePortCheck":[
 				// 		{
-				// 			"operationTargetHost":"远程主机IP1",
-				// 			"operationTargetPort":"远程主机1",
-				// 			"targetDesc":"远程主机描述1"
-				// 		},
-				// 		{
-				// 			"operationTargetHost":"远程主机IP2",
-				// 			"operationTargetPort":"远程主机2",
-				// 			"targetDesc":"远程主机描述2"
+				// 			"checkTime":"2021-05-26 22:04:00",
+				// 			"normal":true,
+				// 			"operationTargetHost":"121.5.103.12",
+				// 			"operationTargetPort":"9000",
+				// 			"targetDesc":"腾讯云minio文件服务"
 				// 		}
 				// 	]
 				// }
@@ -663,29 +658,14 @@
 					}
 				}
 			},
+
+			//时间格式化方法
 			dateFormat(fmt, date) {
-				let ret;
-				const opt = {
-					"Y+": date.getFullYear().toString(),        // 年
-					"m+": (date.getMonth() + 1).toString(),     // 月
-					"d+": date.getDate().toString(),            // 日
-					"H+": date.getHours().toString(),           // 时
-					"M+": date.getMinutes().toString(),         // 分
-					"S+": date.getSeconds().toString()          // 秒
-					// 有其他格式化字符需求可以继续添加，必须转化成字符串
-				};
-				for (let k in opt) {
-					ret = new RegExp("(" + k + ")").exec(fmt);
-					if (ret) {
-						fmt = fmt.replace(ret[1], (ret[1].length == 1) ? (opt[k]) : (opt[k].padStart(ret[1].length, "0")))
-					};
-				};
-				return fmt;
+				return dateFormat(fmt,date);
 			},
 			//解密数据信息
 			decryptData(encryptData){
-				let decryptData=aesDecrypt(encryptData,aesEncryptKey,aesEncryptKey);
-				return JSON.parse(decryptData);
+				return decryptData(encryptData);
 			}
 		}
 	});

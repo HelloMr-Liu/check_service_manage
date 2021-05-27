@@ -41,13 +41,9 @@ public class MyResponseBodyAdvice implements ResponseBodyAdvice {
     }
 
     @Override
-    public Object beforeBodyWrite(Object body, MethodParameter methodParameter, MediaType mediaType, Class aClass, ServerHttpRequest serverHttpRequest, ServerHttpResponse serverHttpResponse) {
-
-        if (methodParameter.getMethod().isAnnotationPresent(ResponseEncrypt.class)) {
-            HttpServletRequest request = SystemFilterConfiguration.contentRequest.get();
-
-            ObjectMapper objectMapper = new ObjectMapper();
-            try {
+    public Object beforeBodyWrite(Object body, MethodParameter methodParameter, MediaType mediaType, Class aClass, ServerHttpRequest serverHttpRequest, ServerHttpResponse serverHttpResponse)  {
+        try {
+            if (methodParameter.getMethod().isAnnotationPresent(ResponseEncrypt.class)) {
 
                 //进行序列化操作配置
                 SerializeConfig serializeConfig = SerializeConfig.globalInstance;
@@ -69,12 +65,13 @@ public class MyResponseBodyAdvice implements ResponseBodyAdvice {
                 String aesEncryptKey = SystemFilterConfiguration.requestAesEncryptKey.get();
                 body = AESUtil.encrypt(result,aesEncryptKey,aesEncryptKey);
                 logger.info("AES加密后响应数据："+body);
-            } catch (Exception e) {
-                logger.warn("对方法method :【" + methodParameter.getMethod().getName() + "】返回数据进行加密出现异常："+e.getMessage());
-                logger.warn(ApplicationUtil.getExceptionMessage(e));
             }
+            return "body";
+        } catch (Exception e) {
+            logger.warn("对方法method :【" + methodParameter.getMethod().getName() + "】返回数据进行加密出现异常："+e.getMessage());
+            logger.warn(ApplicationUtil.getExceptionMessage(e));
+            throw new RuntimeException(e);
         }
-        return body;
     }
 
 }

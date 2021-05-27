@@ -68,28 +68,28 @@ public class SystemFilterConfiguration implements Filter {
 
                     //将请求AES密匙存储到本次请求上
                     requestAesEncryptKey.set(encryptAesEncryptKey);
-                }
 
-                //获取当前请求参数加密json信息
-                String encryptJsonInfo = myHttpServletRequest.getParameter("encryptJsonInfo");
-                if(!StringUtils.isEmpty(encryptJsonInfo)){
+                    //获取当前请求参数加密json信息
+                    String encryptJsonInfo = myHttpServletRequest.getParameter("encryptJsonInfo");
+                    if(!StringUtils.isEmpty(encryptJsonInfo)){
 
-                    //补充加密信息(由于浏览器传递的+号会默认转换成空格,所以将+好补充回来)
-                    encryptJsonInfo=encryptJsonInfo.replaceAll(" ", "+");
+                        //补充加密信息(由于浏览器传递的+号会默认转换成空格,所以将+好补充回来)
+                        encryptJsonInfo=encryptJsonInfo.replaceAll(" ", "+");
 
-                    //将当前加密信息进行解密操作并修改添加到请求参数中
-                    String decryptJsonInfo = AESUtil.decrypt(encryptJsonInfo,encryptAesEncryptKey,encryptAesEncryptKey);
-                    //封装新参数
-                    Map<String, String[]> parameterMap =new HashMap<>(myHttpServletRequest.getParameterMap());
-                    parameterMap.put("decryptJsonInfo",new String[]{decryptJsonInfo});
-                    logger.info("AES解密接收数据："+decryptJsonInfo);
-                    myHttpServletRequest.setParameterMap(parameterMap);
+                        //将当前加密信息进行解密操作并修改添加到请求参数中
+                        String decryptJsonInfo = AESUtil.decrypt(encryptJsonInfo,encryptAesEncryptKey,encryptAesEncryptKey);
+                        //封装新参数
+                        Map<String, String[]> parameterMap =new HashMap<>(myHttpServletRequest.getParameterMap());
+                        parameterMap.put("decryptJsonInfo",new String[]{decryptJsonInfo});
+                        logger.info("AES解密接收数据："+decryptJsonInfo);
+                        myHttpServletRequest.setParameterMap(parameterMap);
+                    }
+                    filterChain.doFilter(myHttpServletRequest, response);
                 }
             }
-            filterChain.doFilter(myHttpServletRequest, response);
         } catch (Exception e) {
-            logger.warn(ApplicationUtil.getExceptionMessage(e));
             try {
+                logger.warn(ApplicationUtil.getExceptionMessage(e));
                 String data = "\""+( AESUtil.encrypt(JSON.toJSONString(SystemResultVo.error("系统错误！请重新请求试试!!!")),requestAesEncryptKey.get(),requestAesEncryptKey.get()))+"\"";
                 OutputStream outputStream= response.getOutputStream();//获取OutputStream输出流
                 contentResponse.get().setHeader("content-type", "text/html;charset=UTF-8");//通过设置响应头控制浏览器以UTF-8的编码显示数据，如果不加这句话，那么浏览器显示的将是乱码
@@ -97,7 +97,6 @@ public class SystemFilterConfiguration implements Filter {
                 outputStream.write(dataByteArr);//使用OutputStream流向客户端输出字节数组
                 outputStream.flush();
             } catch (Exception ex) {
-                ex.printStackTrace();
                 logger.warn(ApplicationUtil.getExceptionMessage(ex));
             }
         }finally {

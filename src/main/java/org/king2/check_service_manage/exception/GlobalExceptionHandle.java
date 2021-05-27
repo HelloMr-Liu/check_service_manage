@@ -1,7 +1,10 @@
 package org.king2.check_service_manage.exception;
 
+import com.alibaba.fastjson.JSON;
+import org.king2.check_service_manage.config.SystemFilterConfiguration;
 import org.king2.check_service_manage.constant.SystemResultCodeEnum;
 import org.king2.check_service_manage.entity.SystemResultVo;
+import org.king2.check_service_manage.utils.AESUtil;
 import org.king2.check_service_manage.utils.ApplicationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +35,7 @@ public class GlobalExceptionHandle {
 	@ExceptionHandler(Exception.class)
 	public Object errorHandler(Exception exception) {
 		pageExceptionLog(exception);
-		return SystemResultVo.build(SystemResultCodeEnum.ERROR.STATE,SystemResultCodeEnum.ERROR.MESS,null);
+		return encryptExceptionData(SystemResultVo.build(SystemResultCodeEnum.ERROR.STATE,SystemResultCodeEnum.ERROR.MESS,null));
 	}
 
 	/**
@@ -44,7 +47,7 @@ public class GlobalExceptionHandle {
 	public Object dataException(BindException exception) {
 		pageExceptionLog(exception);
 		// 返回数据校验错误信息
-		return SystemResultVo.build(SystemResultCodeEnum.CHECK_ERROR.STATE, SystemResultCodeEnum.CHECK_ERROR.MESS, exception.getFieldError().getDefaultMessage());
+		return encryptExceptionData(SystemResultVo.build(SystemResultCodeEnum.CHECK_ERROR.STATE, SystemResultCodeEnum.CHECK_ERROR.MESS, exception.getFieldError().getDefaultMessage()));
 	}
 
 	/**
@@ -58,7 +61,7 @@ public class GlobalExceptionHandle {
 		// 执行校验，获得校验结果
 		Set<ConstraintViolation<?>> validResult = exception.getConstraintViolations();
 		// 返回错误信息
-		return SystemResultVo.build(SystemResultCodeEnum.CHECK_ERROR.STATE, SystemResultCodeEnum.CHECK_ERROR.MESS, validResult.iterator().next().getMessage());
+		return encryptExceptionData(SystemResultVo.build(SystemResultCodeEnum.CHECK_ERROR.STATE, SystemResultCodeEnum.CHECK_ERROR.MESS, validResult.iterator().next().getMessage()));
 	}
 
 	/**
@@ -70,7 +73,7 @@ public class GlobalExceptionHandle {
 	public Object MethodArgumentNotValidException(MethodArgumentNotValidException exception) {
 		pageExceptionLog(exception);
 		// 返回数据校验错误信息
-		return SystemResultVo.build(SystemResultCodeEnum.CHECK_ERROR.STATE, SystemResultCodeEnum.CHECK_ERROR.MESS, exception.getBindingResult().getFieldError().getDefaultMessage());
+		return encryptExceptionData(SystemResultVo.build(SystemResultCodeEnum.CHECK_ERROR.STATE, SystemResultCodeEnum.CHECK_ERROR.MESS, exception.getBindingResult().getFieldError().getDefaultMessage()));
 	}
 
 	/**
@@ -81,6 +84,27 @@ public class GlobalExceptionHandle {
 		// 打印异常信息
 		String exceptionMessage = ApplicationUtil.getExceptionMessage(e);
 		logger.warn("异常信息："+exceptionMessage);
+	}
+
+
+	/**
+	 * 加密异常数据
+	 * @param systemResultVo
+	 * @return
+	 * @throws Exception
+	 */
+	public String encryptExceptionData(SystemResultVo systemResultVo)  {
+		try{
+			//序列化数据信息
+			String resultJsonInfo= JSON.toJSONString(systemResultVo);
+			//获取AES加密密匙
+			String aesEncryptKey= SystemFilterConfiguration.requestAesEncryptKey.get();
+			return AESUtil.encrypt(resultJsonInfo,aesEncryptKey,aesEncryptKey);
+		}catch (Exception e){
+			logger.warn("加密异常响应数据失败！");
+			pageExceptionLog(e);
+			throw new RuntimeException(e);
+		}
 	}
 
 }
