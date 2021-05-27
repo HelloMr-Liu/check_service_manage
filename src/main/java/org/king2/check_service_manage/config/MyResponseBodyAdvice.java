@@ -66,7 +66,7 @@ public class MyResponseBodyAdvice implements ResponseBodyAdvice {
                 body = AESUtil.encrypt(result,aesEncryptKey,aesEncryptKey);
                 logger.info("AES加密后响应数据："+body);
             }
-            return "body";
+            return body;
         } catch (Exception e) {
             logger.warn("对方法method :【" + methodParameter.getMethod().getName() + "】返回数据进行加密出现异常："+e.getMessage());
             logger.warn(ApplicationUtil.getExceptionMessage(e));
