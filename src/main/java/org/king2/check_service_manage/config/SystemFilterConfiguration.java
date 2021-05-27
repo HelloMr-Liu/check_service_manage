@@ -55,7 +55,7 @@ public class SystemFilterConfiguration implements Filter {
         try {
             //获取当前请求接口路径
             String currentRequestUrl = myHttpServletRequest.getServletPath();
-            if(!currentRequestUrl.contains("/security/key")){
+            if(!currentRequestUrl.contains("/html/page")&&currentRequestUrl.contains("/port")){
 
                 SecurityConfigFile securityConfigFile = (SecurityConfigFile)securityService.getSecurityKey();
 
@@ -84,11 +84,11 @@ public class SystemFilterConfiguration implements Filter {
                         logger.info("AES解密接收数据："+decryptJsonInfo);
                         myHttpServletRequest.setParameterMap(parameterMap);
                     }
-                    filterChain.doFilter(myHttpServletRequest, response);
+                }else{
+                    return;
                 }
-            }else{
-                filterChain.doFilter(myHttpServletRequest, response);
             }
+            filterChain.doFilter(myHttpServletRequest, response);
         } catch (Exception e) {
             try {
                 logger.warn(ApplicationUtil.getExceptionMessage(e));
