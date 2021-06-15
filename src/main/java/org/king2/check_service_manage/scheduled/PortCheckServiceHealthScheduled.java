@@ -31,7 +31,7 @@ public class PortCheckServiceHealthScheduled {
     /**每隔15检测一次**/
     @Scheduled(cron = "*/15 * * * * ?")
     public void servicePortCheck(){
-        logger.info(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())+" 开启了检查(主机检测端口服务)连通状态操作！");
+        //logger.info(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())+" 开启了检查(主机检测端口服务)连通状态操作！");
         AtomicInteger failureServiceNumber= new AtomicInteger();
         //获取缓存中对应的服务检测端口信息
         Map<Object, Object> updateDevicePriceMap = redisUtil.hmget(RedisKeyEnum.SERVICE_LIFE_CHECK.name());

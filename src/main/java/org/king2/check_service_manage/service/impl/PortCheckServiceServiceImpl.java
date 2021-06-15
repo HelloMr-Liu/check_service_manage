@@ -160,7 +160,7 @@ public class PortCheckServiceServiceImpl implements PortCheckServiceService {
                 String reponseInfo1 = ApplicationUtil.sendPost("http://"+servicePortCheckInfo.getHttpCheckServerUrl()+"/port_check_service/security/key",null);
                 if(!StringUtils.isEmpty(reponseInfo1)){
                     //进行数据解密
-                    logger.info("远程检测服务获取安全钥匙信息-响应结果："+reponseInfo1);
+                    //logger.info("远程检测服务获取安全钥匙信息-响应结果："+reponseInfo1);
                     SecurityConfigFile remoteSecurityConfig = JSON.parseObject(reponseInfo1, SecurityConfigFile.class);
 
                     //生成一个AES密匙信息,并对明文数据进行加密操作
@@ -174,7 +174,7 @@ public class PortCheckServiceServiceImpl implements PortCheckServiceService {
                     //进行数据解密
                     reponseInfo2=reponseInfo2.substring(1,reponseInfo2.length()-1);
                     reponseInfo2=AESUtil.decrypt(reponseInfo2,aesEncryptKey,aesEncryptKey);
-                    logger.info("远程检测服务发送检测信息-响应结果："+reponseInfo2);
+                    //logger.info("远程检测服务发送检测信息-响应结果："+reponseInfo2);
                 }
             }
             return SystemResultVo.ok(" operation ok  wait service refresh ");
