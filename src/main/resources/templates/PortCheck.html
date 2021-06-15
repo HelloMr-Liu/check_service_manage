@@ -325,6 +325,10 @@
 </style>
 <script type="text/javascript"  th:inline="javascript">
 
+
+
+
+
 	var app = new Vue({
 		el: "#app",
 		data: {
@@ -386,21 +390,22 @@
 			]
 		},
 		mounted(){
+
 			this.newRefreshTime=this.dateFormat("YYYY-mm-dd HH:MM:SS", new Date());
 			this.selectPortCheckServiceCheckList();
 			//初始化一个默认服务检测数据
 			if(this.servicePortCheckInfoList.length){
 				this.currentPortCheckServiceCheckInfo=this.servicePortCheckInfoList[0]
 			}
-
-			//后面每五秒调用依次检测服务列表信息
-			setInterval( ()=> {
-				console.log("调取服务检测信息")
-				this.selectPortCheckServiceCheckList();
-				this.newRefreshTime=this.dateFormat("YYYY-mm-dd HH:MM:SS", new Date());
-			},5000)
+			this.scheduledRefresh();
 		},
 		methods: {
+			scheduledRefresh(){
+				console.log("调取服务检测信息!")
+				this.selectPortCheckServiceCheckList();
+				this.newRefreshTime=this.dateFormat("YYYY-mm-dd HH:MM:SS", new Date());
+				setTimeout(this.scheduledRefresh, 5000)
+			},
 			selectedPortCheckServiceCheck(servicePortCheckInfo){
 				this.currentPortCheckServiceCheckInfo=servicePortCheckInfo;
 				this.activeTab="tab2";
@@ -666,7 +671,8 @@
 			//解密数据信息
 			decryptData(encryptData){
 				return decryptData(encryptData);
-			}
+			},
+
 		}
 	});
 </script>
