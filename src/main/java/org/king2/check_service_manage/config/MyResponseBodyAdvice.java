@@ -64,7 +64,7 @@ public class MyResponseBodyAdvice implements ResponseBodyAdvice {
                 //进行数据加密操作
                 String aesEncryptKey = SystemFilterConfiguration.requestAesEncryptKey.get();
                 body = AESUtil.encrypt(result,aesEncryptKey,aesEncryptKey);
-                logger.info("AES加密后响应数据："+body);
+                //logger.info("AES加密后响应数据："+body);
             }
             return body;
         } catch (Exception e) {
